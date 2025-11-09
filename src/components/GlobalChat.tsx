@@ -22,7 +22,7 @@ export function GlobalChat({ account, onNewMessage }: GlobalChatProps) {
     const [newMessage, setNewMessage] = useState('');
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const lastMessageIdRef = useRef<string>('');
+    const notifiedMessageIds = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         loadMessages();
@@ -40,14 +40,14 @@ export function GlobalChat({ account, onNewMessage }: GlobalChatProps) {
             if (response.ok) {
                 const data = await response.json();
 
-                if (data.length > messages.length) {
-                    const newMessages = data.slice(messages.length);
-                    newMessages.forEach(msg => {
-                        if (msg.fromId !== account.id && onNewMessage) {
-                            onNewMessage(msg);
-                        }
-                    });
-                }
+                data.forEach((msg: GlobalMessage) => {
+                    if (msg.fromId !== account.id &&
+                        !notifiedMessageIds.current.has(msg.id) &&
+                        onNewMessage) {
+                        notifiedMessageIds.current.add(msg.id);
+                        onNewMessage(msg);
+                    }
+                });
 
                 setMessages(data);
             }
